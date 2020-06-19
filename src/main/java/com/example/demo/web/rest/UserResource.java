@@ -103,6 +103,9 @@ public class UserResource {
     @PreAuthorize("hasRole(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<UserDTO> updateUser(@Valid @RequestBody UserDTO userDTO) {
         log.debug("REST request to update a existing User with: {}", userDTO);
+        if (userDTO.getId() == null) {
+            throw new BadRequestAlertException("The given id must not be null", "userManagement", "idnull");
+        }
         Optional<User> userEmailStored = userService.findUserByEmail(userDTO.getEmail());
         if (userEmailStored.isPresent() && !userEmailStored.get().getId().equals(userDTO.getId())) {
             throw new EmailAlreadyUsedException();
