@@ -78,7 +78,7 @@ public class UserService {
             Set<Authority> authorities = userDTO.getAuthorities()
                     .stream()
                     .map(authorityRepository::findById)
-                   // .filter(Optional::isPresent)
+                    .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toSet());
             user.setAuthorities(authorities);
@@ -110,7 +110,7 @@ public class UserService {
                             .setAuthorities(
                                     userDTO.getAuthorities().stream()
                                             .map(authorityRepository::findById)
-                                           // .filter(Optional::isPresent)
+                                            .filter(Optional::isPresent)
                                             .map(Optional::get)
                                             .collect(Collectors.toSet())
                             );
