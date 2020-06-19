@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,9 +54,6 @@ public class UserResourceIT {
 
     private static final String DEFAULT_LANG_KEY = "es";
     private static final String UPDATE_LANG_KEY = "en";
-
-    private static final String DEFAULT_PASSWORD = "passwordpepe";
-    private static final String UPDATE_PASSWORD = "passwordjuan";
 
     @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
@@ -259,6 +257,7 @@ public class UserResourceIT {
     }
 
     @Test
+    @Transactional
     void getUserByUsername() throws Exception {
         // Initialize the database
         userRepository.saveAndFlush(user);
@@ -278,6 +277,23 @@ public class UserResourceIT {
 
         restMockMvc.perform(get("/api/users/unknown/username"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void getAllPaginatedUsers() throws Exception {
+    // Initialize the database
+        userRepository.saveAndFlush(user);
+
+        restMockMvc.perform(get("/api/users?sort=id,desc"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.[*].username").value(hasItem(DEFAULT_USERNAME)))
+            .andExpect(jsonPath("$.[*].firstName").value(hasItem(DEFAULT_FIRST_NAME)))
+            .andExpect(jsonPath("$.[*].lastName").value(hasItem(DEFAULT_LAST_NAME)))
+            .andExpect(jsonPath("$.[*].activated").value(hasItem(true)))
+            .andExpect(jsonPath("$.[*].langKey").value(hasItem(DEFAULT_LANG_KEY)))
+            .andExpect(jsonPath("$.[*].email").value(hasItem(DEFAULT_EMAIL)));
+
     }
 
     @Test

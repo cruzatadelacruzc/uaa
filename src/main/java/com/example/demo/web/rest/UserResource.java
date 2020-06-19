@@ -9,16 +9,22 @@ import com.example.demo.web.rest.error.BadRequestAlertException;
 import com.example.demo.web.rest.error.EmailAlreadyUsedException;
 import com.example.demo.web.rest.error.UsernameAlreadyUsedException;
 import com.example.demo.web.rest.util.HeaderUtil;
+import com.example.demo.web.rest.util.PaginationUtil;
 import com.example.demo.web.rest.util.ResponseUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -61,6 +67,22 @@ public class UserResource {
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
         log.debug("REST request to get User by ID: {}", id);
         return ResponseUtil.wrapOrNotFound(userService.findOne(id));
+    }
+
+    /**
+     * {@code GET /users?sort=id,desc }: get all paginated users
+     *
+     * @param pageable
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with a Entry body
+     */
+    @GetMapping("/users")
+    public ResponseEntity<List<UserDTO>> getAllPaginatedUsers(Pageable pageable) {
+        log.debug("REST request to get all Paginated Users");
+        Page<UserDTO> page = userService.getAllUsers(pageable);
+        HttpHeaders headers = PaginationUtil
+                .generatePaginationHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+
     }
 
     /**
@@ -121,6 +143,7 @@ public class UserResource {
 
     /**
      * {@code DELETE /users/:username/username } delete a user by username
+     *
      * @param username identifier of the user to delete
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
