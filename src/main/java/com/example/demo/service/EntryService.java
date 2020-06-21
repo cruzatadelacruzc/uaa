@@ -67,7 +67,9 @@ public class EntryService {
         if (SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
             return entryRepository.findAll(pageable);
         }
-        return entryRepository.findAllByUserUsername(pageable, SecurityUtils.getCurrentUserLogin().get());
+        String username = SecurityUtils.getCurrentUserLogin().get();
+        log.debug("Request to get all entries of the User: {}", username);
+        return entryRepository.findAllByUserUsername(pageable, username);
     }
 
     /**

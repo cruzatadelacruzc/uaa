@@ -19,6 +19,9 @@ eureka:
 spring:
   profiles:
     active: dev
+    include:
+    # Uncomment to activate TLS for the dev profile
+    #- tls
   security:
     user:
       name: admin
@@ -52,6 +55,23 @@ server:
 # App specific properties
 # ===================================================================
 application:
+  key-store:
+    name: config/tls/keystore.p12
+    password: cesarmanuel20
+    alias: uaa
+  security:
+    # internal client to request AuthorizationServer
+    client-authorization:
+      client-id: internal
+      client-secret: internal
+  web-client-configuration:
+    # Access Token is valid for 5 mins
+    access-token-validity-in-seconds: 300
+    # Refresh Token is valid for 7 days
+    refresh-token-validity-in-seconds-for-remember-me: 604800
+    #change client secret in production, keep in sync with gateway configuration
+    client-id: web_app
+    secret: changeit
   payment:
       paypal:
         credential:
