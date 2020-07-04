@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import com.example.demo.security.AuthoritiesConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
@@ -90,7 +91,17 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
                 .scopes("read")
                 .autoApprove(true)
                 .accessTokenValiditySeconds(accessTokenValidity)
-                .refreshTokenValiditySeconds(refreshTokenValidity);
+                .refreshTokenValiditySeconds(refreshTokenValidity)
+               .and()
+                 //For the machine calls, the machine has to authenticate as a UAA using client credentials grant
+                .withClient(properties.getSecurity().getClientAuthorization().getClientId())
+                .secret(passwordEncoder.encode(properties.getSecurity().getClientAuthorization().getClientSecret()))
+                .authorities(AuthoritiesConstants.ADMIN)
+                .autoApprove(true)
+                .authorizedGrantTypes("client_credentials")
+                .scopes("web-app")
+                .accessTokenValiditySeconds((int) properties.getSecurity().getClientAuthorization().getTokenValidityInSeconds())
+                .refreshTokenValiditySeconds((int) properties.getSecurity().getClientAuthorization().getTokenValidityInSecondsForRememberMe());
     }
 
     @Override

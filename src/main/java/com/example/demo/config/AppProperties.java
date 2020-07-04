@@ -31,6 +31,10 @@ public class AppProperties {
             private String clientId = "internal";
 
             private String clientSecret = "internal";
+
+            private long tokenValidityInSeconds = 1800; // 30 minutes
+
+            private long tokenValidityInSecondsForRememberMe = 2592000; // 30 days
         }
     }
 
