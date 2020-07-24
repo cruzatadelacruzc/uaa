@@ -1,5 +1,5 @@
 # ===================================================================
-# Spring Boot configuration for the "dev" profile.
+# Spring Boot configuration for the "prod" profile.
 #
 # This configuration overrides the application.yml file.
 #
@@ -10,33 +10,27 @@
 # ===================================================================
 logging:
   level:
-    com.example.demo: debug
+    ROOT: INFO
+    com.example.demo: INFO
 eureka:
+  instance:
+    hostname: ${DOMAIN_NAME:localhost}
   client:
     service-url:
-      defaultZone: http://admin:eureka@localhost:8761/eureka/
+      defaultZone: ${application.register.discovery-url}
 
 spring:
   profiles:
-    active: dev
-    include:
-    # Uncomment to activate TLS for the dev profile
-    #- tls
-  security:
-    user:
-      name: admin
-      password: admin
-      roles:
-        - ADMIN
+    active: prod
   devtools:
     restart:
-      enabled: true
+      enabled: false
     add-properties: false
   datasource:
-    url: jdbc:postgresql://localhost:5433/uaa
+    url: ${DATABASE_URL}
     type: com.zaxxer.hikari.HikariDataSource
-    username: postgres
-    password: postgres
+    username: ${USERNAME_POSTGRES:postgres}
+    password: ${PASSWORD_POSTGRES:postgres}
     hikari:
       pool-name: Hiraki
       auto-commit: false
@@ -48,23 +42,39 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     database: POSTGRESQL
-    show-sql: true
+    show-sql: false
     properties:
       hibernate.id.new_generator_mappings: true
       hibernate.connection.provider_disables_autocommit: true
       hibernate.cache.use_second_level_cache: true
       hibernate.cache.use_query_cache: false
       hibernate.generate_statistics: false
+      #Hibernate can then execute SQL statements in batches, therefore reducing the number of database network roundtrips
+      #between 5 and 30
+      hibernate.jdbc.batch_size: 25
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+      #Hibernate can then prevent in-memory pagination when join fetching a child entity collection
+      hibernate.query.fail_on_pagination_over_collection_fetch: true
+      #Hibernate entity queries can then make better use of statement caching and fewer entity queries will have to be compiled while varying the number of parameters passed to the in query clause
+      hibernate.query.in_clause_parameter_padding: true
+      # Configuration to Cache Provider Hazelcast
       hibernate.cache.region.factory_class: com.hazelcast.hibernate.HazelcastCacheRegionFactory
       hibernate.cache.hazelcast.instance_name: uaa
       hibernate.cache.use_minimal_puts: true
       hibernate.cache.hazelcast.use_lite_member: true
 server:
-  port: 9999
+  port: ${PORT:9999}
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css, application/javascript, application/json
+    min-response-size: 1024
 # ===================================================================
 # App specific properties
 # ===================================================================
 application:
+  register:
+    discovery-url: http://admin:eureka@localhost:8761/eureka/
   key-store:
     name: config/tls/keystore.p12
     password: cesarmanuel20

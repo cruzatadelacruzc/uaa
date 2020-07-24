@@ -7,15 +7,16 @@ import com.example.demo.event.ApprovedPaymentEntryEvent;
 import com.example.demo.event.RegisterEntryEvent;
 import com.example.demo.event.WalletEntryRegisteredEvent;
 import com.example.demo.repository.WalletRepository;
+import com.example.demo.service.dto.WalletDTO;
+import com.example.demo.service.mapper.WalletMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 
 @Slf4j
@@ -24,6 +25,8 @@ import java.util.Optional;
 @AllArgsConstructor
 public class WalletService {
     private final WalletRepository walletRepository;
+    private final WalletMapper walletMapper;
+    private final String WALLETS_BY_USER_USERNAME = "walletsByUserUsername";
 
     /**
      * Register an deposit entry in wallet
@@ -33,7 +36,6 @@ public class WalletService {
      */
     public Wallet registerEntry(Entry entry) {
         Wallet wallet = new Wallet();
-        wallet.setDate(ZonedDateTime.ofInstant(Instant.now(), ZoneOffset.UTC));
         wallet.setUser(entry.getUser());
         double amount = Double.parseDouble(entry.getAmount());
         Optional<Wallet> old_entry = walletRepository.findByUser(entry.getUser());
@@ -56,5 +58,37 @@ public class WalletService {
     public WalletEntryRegisteredEvent registerDepositEntry(ApprovedPaymentEntryEvent entryEvent) {
         Wallet wallet = registerEntry(entryEvent.getObject());
         return new WalletEntryRegisteredEvent().setWallet(wallet).setEntryRegistered(true);
+    }
+
+    /**
+     * Get a {@link Wallet} entity of the User by username
+     *
+     * @param username of the user
+     * @return {@link WalletDTO} instance if is present
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = WALLETS_BY_USER_USERNAME)
+    public Optional<WalletDTO> getWalletByUsername(String username) {
+        log.debug("Request to get wallet of the User by username: {}", username);
+        return walletRepository.findByUserUsername(username).map(walletMapper::toDto);
+    }
+
+    /**
+     * Update a existing Wallet
+     *
+     * @param walletDTO Container of the data {@link WalletDTO}
+     * @return WalletDTO if is founded
+     */
+    @CacheEvict(value = WALLETS_BY_USER_USERNAME, allEntries = true)
+    public Optional<WalletDTO> updateWalletByUser(WalletDTO walletDTO) {
+        return Optional.of(walletRepository.findByUserId(walletDTO.getUserId()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(wallet -> {
+                    wallet.setTotal_amount(walletDTO.getTotal_amount());
+                    log.debug("Changed Information(Amount) for Wallet {}", wallet);
+                    return wallet;
+                })
+                .map(walletMapper::toDto);
     }
 }

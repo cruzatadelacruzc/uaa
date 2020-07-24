@@ -10,6 +10,9 @@ import com.example.demo.service.dto.UserDTO;
 import com.example.demo.service.mapper.UserMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +33,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
+    private static final String USER_BY_USERNAME = "userByUsername";
+    private static final String USER_BY_EMAIL = "userByEmail";
+    private static final String USER_BY_ID = "userByID";
+
 
     /**
      * Get a {@link User}
@@ -38,6 +45,7 @@ public class UserService {
      * @return {@link UserDTO} instance if is present
      */
     @Transactional(readOnly = true)
+    @Cacheable(value = USER_BY_ID, key = "#id")
     public Optional<UserDTO> findOne(Long id) {
         log.debug("Request to get a User with ID: {}", id);
         return userRepository.findById(id).map(userMapper::userToUserDTO);
@@ -50,6 +58,7 @@ public class UserService {
      * @return {@link UserDTO} instance if is present
      */
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = USER_BY_USERNAME)
     public Optional<UserDTO> findByUsername(String username) {
         log.debug("Request to get a User with username: {}", username);
         return userRepository.findOneWithAuthoritiesByUsernameIgnoreCase(username).map(userMapper::userToUserDTO);
@@ -61,6 +70,11 @@ public class UserService {
      * @param userDTO Container of the data {@link UserDTO}
      * @return User
      */
+    @Caching(evict = {
+            @CacheEvict(value = USER_BY_USERNAME, allEntries = true),
+            @CacheEvict(value = USER_BY_EMAIL , allEntries = true),
+            @CacheEvict(value = USER_BY_ID, key = "#userDTO.id"),
+    })
     public User createUser(UserDTO userDTO) {
         User user = new User();
         user.setUsername(userDTO.getUsername().toLowerCase());
@@ -94,6 +108,11 @@ public class UserService {
      * @param userDTO Container of the data {@link UserDTO}
      * @return UserDTO if is founded
      */
+    @Caching(evict = {
+            @CacheEvict(value = USER_BY_USERNAME, allEntries = true),
+            @CacheEvict(value = USER_BY_EMAIL , allEntries = true),
+            @CacheEvict(value = USER_BY_ID, allEntries = true),
+    })
     public Optional<UserDTO> updateUser(UserDTO userDTO) {
 
         return Optional.of(userRepository.findById(userDTO.getId()))
@@ -106,14 +125,16 @@ public class UserService {
                             .setFirstName(userDTO.getFirstName())
                             .setLastName(userDTO.getLastName())
                             .setActivated(userDTO.isActivated())
-                            .setEmail(userDTO.getEmail().toLowerCase())
-                            .setAuthorities(
-                                    userDTO.getAuthorities().stream()
-                                            .map(authorityRepository::findById)
-                                            .filter(Optional::isPresent)
-                                            .map(Optional::get)
-                                            .collect(Collectors.toSet())
-                            );
+                            .setEmail(userDTO.getEmail().toLowerCase());
+                    if (!userDTO.getAuthorities().isEmpty()) {
+                        Set<Authority> managedAuthorities = user.getAuthorities();
+                        managedAuthorities.clear();
+                        userDTO.getAuthorities().stream()
+                                .map(authorityRepository::findById)
+                                .filter(Optional::isPresent)
+                                .map(Optional::get)
+                                .forEach(managedAuthorities::add);
+                    }
                     log.debug("Changed Information for User {}", user);
                     return user;
                 })
@@ -121,11 +142,44 @@ public class UserService {
     }
 
     /**
+     * Update basic information (first name, last name, email, language) for the current user.
+     *
+     * @param firstName first name of user.
+     * @param lastName  last name of user.
+     * @param email     email id of user.
+     * @param langKey   language key.
+     * @param imageUrl  image URL of user.
+     */
+    @Caching(evict = {
+            @CacheEvict(value = USER_BY_USERNAME, allEntries = true),
+            @CacheEvict(value = USER_BY_EMAIL , allEntries = true),
+            @CacheEvict(value = USER_BY_ID, allEntries = true),
+    })
+    public void updateUser(String firstName, String lastName, String email, String langKey, String imageUrl) {
+        SecurityUtils.getCurrentUserLogin()
+                .flatMap(userRepository::findUserByUsername)
+                .ifPresent(user -> {
+                    user.setFirstName(firstName);
+                    user.setLastName(lastName);
+                    if (email != null) {
+                        user.setEmail(email.toLowerCase());
+                    }
+                    user.setLangKey(langKey);
+                    log.debug("Changed Information for User: {}", user);
+                });
+    }
+
+    /**
      * Delete a User by username
      *
      * @param username of the user
      */
-    public void deleteByUsername(String username){
+    @Caching(evict = {
+            @CacheEvict(value = USER_BY_USERNAME, allEntries = true),
+            @CacheEvict(value = USER_BY_EMAIL , allEntries = true),
+            @CacheEvict(value = USER_BY_ID, allEntries = true),
+    })
+    public void deleteByUsername(String username) {
         userRepository.findUserByUsername(username).ifPresent(user -> {
             userRepository.delete(user);
             log.debug("Deleted User: {}", user);
@@ -138,6 +192,7 @@ public class UserService {
      * @param email identifier of the user for log in
      * @return a {@link User} if it's founded
      */
+    @Cacheable(cacheNames = USER_BY_EMAIL)
     public Optional<User> findUserByEmail(String email) {
         log.debug("Request to get User by email: {} ", email);
         return userRepository.findUserByEmail(email);

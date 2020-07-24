@@ -3,6 +3,7 @@ package com.example.demo.web.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.commons.lang.RandomStringUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
@@ -15,6 +16,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -27,6 +29,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class TestUtil {
 
     private static final ObjectMapper mapper = createObjectMapper();
+
+    private static final SecureRandom SECURE_RANDOM;
+
+    static {
+        SECURE_RANDOM = new SecureRandom();
+        SECURE_RANDOM.nextBytes(new byte[64]);
+    }
 
     private static ObjectMapper createObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
@@ -131,6 +140,14 @@ public final class TestUtil {
         registrar.setUseIsoFormat(true);
         registrar.registerFormatters(dfcs);
         return dfcs;
+    }
+
+    /**
+     * Generator of Random Strings
+     * @return Random Strings
+     */
+    public static String generateRandomAlphanumericString(int count) {
+        return RandomStringUtils.random(count, 0, 0, true, true, null, SECURE_RANDOM);
     }
 
     /**

@@ -63,8 +63,8 @@ public class EntryService {
      */
     @Transactional(readOnly = true)
     public Page<Entry> getAllEntries(Pageable pageable) {
-        log.debug("Request to get all entries");
         if (SecurityUtils.isCurrentUserInRole(AuthoritiesConstants.ADMIN)) {
+            log.debug("Request to get all entries");
             return entryRepository.findAll(pageable);
         }
         String username = SecurityUtils.getCurrentUserLogin().get();

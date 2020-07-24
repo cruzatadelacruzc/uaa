@@ -12,6 +12,9 @@ public final class Constants {
     public static final String DEFAULT_LANGUAGE = "es";
     public static final String ANONYMOUS_USER = "anonymoususer";
 
+    public static final String PROFILE_DEV = "dev";
+    public static final String PROFILE_PROD = "prod";
+
     public static final String ENTRY_WITHDRAW = "WITHDRAW";
     public static final String ENTRY_DEPOSIT = "DEPOSIT";
     public static final String PAYMENT_STATUS_CREATED = "created";
