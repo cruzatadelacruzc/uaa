@@ -5,8 +5,10 @@
 spring:
   cloud:
     config:
-      profile: dev
       uri: http://admin:config@localhost:8081/config
+      # name of the config server's property source (file.yml) that we want to use
+      name: uaa
+      profile: dev # profile(s) of the property source
       label: master # toggle to switch to a different version of the configuration as stored in git
       # it can be set to any label, branch or commit of the configuration source Git repository
-      name: uaa
+
