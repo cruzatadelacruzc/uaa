@@ -17,7 +17,7 @@ eureka:
     hostname: ${DOMAIN_NAME:localhost}
   client:
     service-url:
-      defaultZone: ${application.register.discovery-url}
+      defaultZone: ${application.register.discovery-url}/eureka/
 
 spring:
   profiles:
@@ -74,7 +74,7 @@ server:
 # ===================================================================
 application:
   register:
-    discovery-url: http://admin:eureka@localhost:8761/eureka/
+    discovery-url: http://admin:eureka@localhost:8761
   key-store:
     name: config/tls/keystore.p12
     password: cesarmanuel20
