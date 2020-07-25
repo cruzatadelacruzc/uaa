@@ -13,8 +13,6 @@ logging:
     ROOT: INFO
     com.example.demo: INFO
 eureka:
-  instance:
-    hostname: ${DOMAIN_NAME:localhost}
   client:
     service-url:
       defaultZone: ${application.register.discovery-url}/eureka/

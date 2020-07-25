@@ -12,6 +12,7 @@ eureka:
     registry-fetch-interval-seconds: 10
   instance:
     appname: uaa
+    prefer-ip-address: true
     instanceId: uaa:${spring.application.instance-id:${random.value}}
     status-page-url-path: ${management.endpoints.web.base-path}/info
     health-check-url-path: ${management.endpoints.web.base-path}/health
