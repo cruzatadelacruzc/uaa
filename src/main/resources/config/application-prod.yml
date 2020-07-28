@@ -10,7 +10,7 @@
 # ===================================================================
 logging:
   level:
-    ROOT: debug
+    ROOT: INFO
     com.example.demo: debug
 eureka:
   instance:
