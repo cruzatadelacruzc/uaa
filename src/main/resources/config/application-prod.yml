@@ -10,8 +10,8 @@
 # ===================================================================
 logging:
   level:
-    ROOT: INFO
-    com.example.demo: INFO
+    ROOT: debug
+    com.example.demo: debug
 eureka:
   instance:
     hostname: ${DOMAIN_NAME:localhost}
