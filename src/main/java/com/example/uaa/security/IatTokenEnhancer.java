@@ -1,0 +1,39 @@
+package com.example.uaa.security;
+
+import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
+import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.token.TokenEnhancer;
+import org.springframework.stereotype.Component;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Adds the standard "iat" claim to tokens so we know when they have been created.
+ * This is needed for a session timeout due to inactivity (ignored in case of "remember-me").
+ *
+ * Description about IAT: The "iat" (issued at) claim identifies the time at which the JWT was issued.
+ * This claim can be used to determine the age of the JWT
+ *
+ */
+@Component
+public class IatTokenEnhancer implements TokenEnhancer {
+
+    @Override
+    public OAuth2AccessToken enhance(OAuth2AccessToken oAuth2AccessToken, OAuth2Authentication oAuth2Authentication) {
+        addClaim((DefaultOAuth2AccessToken) oAuth2AccessToken);
+        return oAuth2AccessToken;
+    }
+
+    private void addClaim(DefaultOAuth2AccessToken accessToken) {
+        Map<String, Object> additionalInformation = accessToken.getAdditionalInformation();
+        if (additionalInformation.isEmpty()) {
+            additionalInformation = new LinkedHashMap<String, Object>();
+        }
+        //add "iat" claim with current time in secs
+        //this is used for an inactive session timeout
+        additionalInformation.put("iat", (int) (System.currentTimeMillis() / 1000L));
+        accessToken.setAdditionalInformation(additionalInformation);
+    }
+}

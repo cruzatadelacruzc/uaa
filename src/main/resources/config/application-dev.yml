@@ -10,11 +10,11 @@
 # ===================================================================
 logging:
   level:
-    com.example.demo: debug
+    com.example.uaa: debug
 eureka:
   client:
     service-url:
-      defaultZone: http://admin:eureka@localhost:8761/eureka/
+      defaultZone: http://admin:registry-config@localhost:8761/eureka/
 
 spring:
   profiles:
