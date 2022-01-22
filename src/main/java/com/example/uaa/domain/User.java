@@ -69,6 +69,9 @@ public class User extends AbstractAuditingEntity implements Serializable {
     @Column(name = "lang_key", length = 10)
     private String langKey;
 
+    @Column(name = "activation_key")
+    private String activationKey;
+
     @CreatedDate
     @Column(name = "created_date", updatable = false)
     @JsonIgnore
@@ -126,6 +129,11 @@ public class User extends AbstractAuditingEntity implements Serializable {
 
     public User setLangKey(String langKey) {
         this.langKey = langKey;
+        return this;
+    }
+
+    public User setActivationKey(String activationKey) {
+        this.activationKey = activationKey;
         return this;
     }
 

@@ -63,6 +63,18 @@ spring:
       hibernate.cache.hazelcast.instance_name: uaa
       hibernate.cache.use_minimal_puts: true
       hibernate.cache.hazelcast.use_lite_member: true
+  # Mail Properties
+  mail:
+    host: "smtp.gmail.com"
+    port: 587
+    username: amazingpeople2018@gmail.com
+    password: wpoqshasnfbqmsqt #App password auto-generated
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 server:
   port: ${PORT:9999}
   compression:

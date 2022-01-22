@@ -3,7 +3,6 @@ package com.example.uaa;
 import com.example.uaa.config.AppProperties;
 import com.example.uaa.config.Constants;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -12,6 +11,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -24,16 +24,16 @@ import java.util.Map;
 @SpringBootApplication
 @EnableConfigurationProperties({AppProperties.class})
 @EnableJpaAuditing(auditorAwareRef = "springSecurityAuditorAware")
-public class UaaApplication implements InitializingBean {
+public class UaaApp {
 
     private final Environment env;
 
-    public UaaApplication(Environment env) {
+    public UaaApp(Environment env) {
         this.env = env;
     }
 
     public static void main(String[] args) {
-        SpringApplication app = new SpringApplication(UaaApplication.class);
+        SpringApplication app = new SpringApplication(UaaApp.class);
         addDefaultProfile(app);
         Environment env = app.run(args).getEnvironment();
         logApplicationStartup(env);
@@ -44,7 +44,7 @@ public class UaaApplication implements InitializingBean {
      * Spring profiles can be configured with a program argument --spring.profiles.active=your-active-profile
      * <p>
      */
-    @Override
+    @PostConstruct
     public void afterPropertiesSet() throws Exception {
         Collection<String> profiles = Arrays.asList(env.getActiveProfiles());
         if (profiles.contains(Constants.PROFILE_DEV) && profiles.contains(Constants.PROFILE_PROD)) {

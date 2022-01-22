@@ -73,10 +73,23 @@ server:
 application:
   clientApp:
     name: 'uaaApp'
-  # cors:
-  #     allowed-origins: "*"
-  #     allowed-methods: "*"
-  #     allowed-headers: "*"
-  #     exposed-headers: "Authorization,Link,X-Total-Count"
-  #     allow-credentials: true
-  #     max-age: 1800
+# cors:
+#   allowed-origins: "*"
+#   allowed-methods: "*"
+#   allowed-headers: "*"
+#   exposed-headers: "Authorization,Link,X-Total-Count"
+#   allow-credentials: true
+#   max-age: 1800
+  swagger:
+    default-include-pattern: /api/.*
+    title: Catalog API
+    description: Catalog API documentation
+    version: 0.0.1
+    terms-of-service-url:
+    contact-name:
+    contact-url:
+    contact-email:
+    license: unlicensed
+    license-url:
+  mail:
+    from: amazingpeople2018@gmail.com

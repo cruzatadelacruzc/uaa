@@ -14,7 +14,9 @@ import org.springframework.web.cors.CorsConfiguration;
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 public class AppProperties {
 
+    private final Mail mail = new Mail();
     private final Cache cache = new Cache();
+    private Swagger swagger = new Swagger();
     private final Payment payment = new Payment();
     private final KeyStore keyStore = new KeyStore();
     private final Security security = new Security();
@@ -24,6 +26,21 @@ public class AppProperties {
     private final RegistryConfig registryConfig = new RegistryConfig();
     private final WebClientConfiguration webClientConfiguration = new WebClientConfiguration();
 
+    @Getter
+    public static class Mail {
+        private String baseUrl;
+        private String from;
+
+        public Mail setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+            return this;
+        }
+
+        public Mail setFrom(String from) {
+            this.from = from;
+            return this;
+        }
+    }
 
     @Getter
     public static class Cache{
@@ -50,6 +67,88 @@ public class AppProperties {
                 this.url = url;
                 return this;
             }
+        }
+    }
+
+    @Getter
+    public static class Swagger {
+        private String title = "Application API";
+        private String description = "API documentation";
+        private String version = "0.0.1";
+        private String termsOfServiceUrl;
+        private String contactName;
+        private String contactUrl;
+        private String contactEmail;
+        private String license;
+        private String licenseUrl;
+        private String defaultIncludePattern = "/api/.*";
+        private String host;
+        private String[] protocols = new String[0];;
+        private boolean useDefaultResponseMessages = true;
+
+        public Swagger setTitle(String title) {
+            this.title = title;
+            return this;
+        }
+
+        public Swagger setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Swagger setVersion(String version) {
+            this.version = version;
+            return this;
+        }
+
+        public Swagger setTermsOfServiceUrl(String termsOfServiceUrl) {
+            this.termsOfServiceUrl = termsOfServiceUrl;
+            return this;
+        }
+
+        public Swagger setContactName(String contactName) {
+            this.contactName = contactName;
+            return this;
+        }
+
+        public Swagger setContactUrl(String contactUrl) {
+            this.contactUrl = contactUrl;
+            return this;
+        }
+
+        public Swagger setContactEmail(String contactEmail) {
+            this.contactEmail = contactEmail;
+            return this;
+        }
+
+        public Swagger setLicense(String license) {
+            this.license = license;
+            return this;
+        }
+
+        public Swagger setLicenseUrl(String licenseUrl) {
+            this.licenseUrl = licenseUrl;
+            return this;
+        }
+
+        public Swagger setDefaultIncludePattern(String defaultIncludePattern) {
+            this.defaultIncludePattern = defaultIncludePattern;
+            return this;
+        }
+
+        public Swagger setHost(String host) {
+            this.host = host;
+            return this;
+        }
+
+        public Swagger setProtocols(String[] protocols) {
+            this.protocols = protocols;
+            return this;
+        }
+
+        public Swagger setUseDefaultResponseMessages(boolean useDefaultResponseMessages) {
+            this.useDefaultResponseMessages = useDefaultResponseMessages;
+            return this;
         }
     }
 

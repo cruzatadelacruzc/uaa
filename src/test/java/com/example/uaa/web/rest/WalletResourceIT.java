@@ -1,6 +1,6 @@
 package com.example.uaa.web.rest;
 
-import com.example.uaa.UaaApplication;
+import com.example.uaa.UaaApp;
 import com.example.uaa.domain.User;
 import com.example.uaa.domain.Wallet;
 import com.example.uaa.repository.UserRepository;
@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for the {@link WalletResource} REST controller.
  */
-@SpringBootTest(classes = UaaApplication.class)
+@SpringBootTest(classes = UaaApp.class)
 public class WalletResourceIT {
 
     private static final Double DEFAULT_AMOUNT = Double.parseDouble("10");

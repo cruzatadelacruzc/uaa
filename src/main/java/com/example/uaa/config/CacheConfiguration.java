@@ -1,16 +1,24 @@
 package com.example.uaa.config;
 
-import com.hazelcast.config.*;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.ManagementCenterConfig;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.spring.cache.HazelcastCacheManager;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.DisposableBean;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.info.BuildProperties;
+import org.springframework.boot.info.GitProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.serviceregistry.Registration;
@@ -18,24 +26,31 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
+import javax.annotation.PreDestroy;
+import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Objects;
 
 @Slf4j
 @Configuration
 @EnableCaching
-public class CacheConfiguration implements DisposableBean {
-
-    private final Environment env;
+public class CacheConfiguration {
 
     @Value("${spring.application.name}")
     private String instanceName;
-
-    private final DiscoveryClient discoveryClient;
-
-    private final ServerProperties serverProperties;
-
-    private static final Integer PORT = 5701;
-
+    private final Environment env;
     private Registration registration;
+    private GitProperties gitProperties;
+    private BuildProperties buildProperties;
+    private static final Integer PORT = 5701;
+    private final DiscoveryClient discoveryClient;
+    private final ServerProperties serverProperties;
 
     public CacheConfiguration(Environment env, DiscoveryClient discoveryClient, ServerProperties serverProperties) {
         this.env = env;
@@ -49,7 +64,7 @@ public class CacheConfiguration implements DisposableBean {
     }
 
 
-    @Override
+    @PreDestroy
     public void destroy() throws Exception {
         log.info("Closing Cache Manager");
         Hazelcast.shutdownAll();
@@ -69,7 +84,6 @@ public class CacheConfiguration implements DisposableBean {
             log.debug("Hazelcast already initialized");
             return hazelcastInstance;
         }
-
         Config config = new Config();
         config.setInstanceName(this.instanceName);
         config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
@@ -151,5 +165,87 @@ public class CacheConfiguration implements DisposableBean {
         MapConfig mapConfig = new MapConfig();
         mapConfig.setTimeToLiveSeconds(properties.getCache().getTimeToLiveSeconds());
         return mapConfig;
+    }
+
+    @Autowired(required = false)
+    public void setGitProperties(GitProperties gitProperties) {
+        this.gitProperties = gitProperties;
+    }
+
+    @Autowired(required = false)
+    public void setBuildProperties(BuildProperties buildProperties) {
+        this.buildProperties = buildProperties;
+    }
+
+    /**
+     *  Explanation is available at https://www.baeldung.com/spring-cache-custom-keygenerator
+     * @return {@link KeyGenerator} instance
+     */
+    @Bean
+    public KeyGenerator keyGenerator() {
+        return new PrefixedKeyGenerator(this.gitProperties, this.buildProperties);
+    }
+
+    @Getter
+    private static class PrefixedKeyGenerator implements KeyGenerator {
+
+        private final String prefix;
+
+        public PrefixedKeyGenerator(GitProperties gitProperties, BuildProperties buildProperties) {
+            this.prefix = this.generatePrefix(gitProperties, buildProperties);
+        }
+
+        private String generatePrefix(GitProperties gitProperties, BuildProperties buildProperties) {
+            String shortCommitId = null;
+            if (Objects.nonNull(gitProperties)) {
+                shortCommitId = gitProperties.getShortCommitId();
+            }
+
+            Instant time = null;
+            String version = null;
+            if (Objects.nonNull(buildProperties)) {
+                time = buildProperties.getTime();
+                version = buildProperties.getVersion();
+            }
+
+            Object p = ObjectUtils.firstNonNull(new Serializable[]{shortCommitId, time, version, RandomStringUtils.randomAlphanumeric(12)});
+            return p instanceof Instant ? DateTimeFormatter.ISO_INSTANT.format((Instant)p) : p.toString();
+        }
+
+        @Override
+        public Object generate(Object o, Method method, Object... objects) {
+            return new PrefixedSimpleKey(this.prefix, method.getName(), objects);
+        }
+
+        private static class PrefixedSimpleKey {
+            private final String prefix;
+            private final Object[] params;
+            private final String methodName;
+            private int hashCode;
+
+            public PrefixedSimpleKey(String prefix, String methodName, Object... elements) {
+                Assert.notNull(prefix, "Prefix must not be null");
+                Assert.notNull(elements, "Elements must not be null");
+                this.prefix = prefix;
+                this.methodName = methodName;
+                this.params = new Object[elements.length];
+                System.arraycopy(elements, 0, this.params, 0, elements.length);
+                this.hashCode = prefix.hashCode();
+                this.hashCode = 31 * this.hashCode + methodName.hashCode();
+                this.hashCode = 31 * this.hashCode + Arrays.deepHashCode(this.params);
+            }
+
+            public boolean equals(Object other) {
+                return this == other || other instanceof PrefixedSimpleKey && this.prefix.equals(((PrefixedSimpleKey)other).prefix) && this.methodName.equals(((PrefixedSimpleKey)other).methodName) && Arrays.deepEquals(this.params, ((PrefixedSimpleKey)other).params);
+            }
+
+            public final int hashCode() {
+                return this.hashCode;
+            }
+
+            public String toString() {
+                return this.prefix + " " + this.getClass().getSimpleName() + this.methodName + " [" + StringUtils.arrayToCommaDelimitedString(this.params) + "]";
+            }
+        }
     }
 }

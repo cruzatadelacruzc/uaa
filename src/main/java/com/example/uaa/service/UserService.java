@@ -1,10 +1,10 @@
 package com.example.uaa.service;
 
-import com.example.uaa.config.Constants;
 import com.example.uaa.domain.Authority;
 import com.example.uaa.domain.User;
 import com.example.uaa.repository.AuthorityRepository;
 import com.example.uaa.repository.UserRepository;
+import com.example.uaa.security.AuthoritiesConstants;
 import com.example.uaa.security.SecurityUtils;
 import com.example.uaa.service.dto.UserDTO;
 import com.example.uaa.service.mapper.UserMapper;
@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ public class UserService {
      * @return {@link UserDTO} instance if is present
      */
     @Transactional(readOnly = true)
-    @Cacheable(value = USER_BY_ID, key = "#id")
+    @Cacheable(value = USER_BY_ID)
     public Optional<UserDTO> findOne(Long id) {
         log.debug("Request to get a User with ID: {}", id);
         return userRepository.findById(id).map(userMapper::userToUserDTO);
@@ -76,17 +77,7 @@ public class UserService {
             @CacheEvict(value = USER_BY_ID, key = "#userDTO.id"),
     })
     public User createUser(UserDTO userDTO) {
-        User user = new User();
-        user.setUsername(userDTO.getUsername().toLowerCase());
-        user.setLastName(userDTO.getLastName());
-        user.setFirstName(userDTO.getFirstName());
-        user.setActivated(userDTO.isActivated());
-        if (userDTO.getLangKey() == null) {
-            user.setLangKey(Constants.DEFAULT_LANGUAGE);
-        } else {
-            user.setLangKey(userDTO.getLangKey());
-        }
-        user.setEmail(userDTO.getEmail().toLowerCase());
+        User user = userMapper.UserDTOToUser(userDTO);
         user.setPassword(passwordEncoder.encode(UtilService.generateRandomAlphanumericString()));
         if (userDTO.getAuthorities() != null) {
             Set<Authority> authorities = userDTO.getAuthorities()
@@ -221,5 +212,66 @@ public class UserService {
         return SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneWithAuthoritiesByUsernameIgnoreCase);
     }
 
+    /**
+     * Register a new account
+     * @param userDTO  the info to create new account
+     * @param password  of the new user
+     * @return {@link User} instance
+     */
+    @Caching(evict = {
+            @CacheEvict(value = USER_BY_USERNAME, allEntries = true),
+            @CacheEvict(value = USER_BY_EMAIL , allEntries = true)
+    })
+    public User register(UserDTO userDTO, String password) {
+        User user = userMapper.UserDTOToUser(userDTO);
+        userRepository.findUserByUsername(user.getUsername()).ifPresent(existingUser -> {
+            if ( !removeNonActivatedUser(existingUser)) {
+                throw new UsernameAlreadyUsedException();
+            }
+        });
 
+        userRepository.findUserByEmail(user.getEmail()).ifPresent(existingUser -> {
+            if (!removeNonActivatedUser(existingUser)) {
+                throw new EmailAlreadyUsedException();
+            }
+        });
+        user.setPassword(passwordEncoder.encode(password));
+        // new user is not active
+        user.setActivated(true);
+        user.setActivationKey(UtilService.generateRandomAlphanumericString());
+        Set<Authority> authority = new HashSet<>();
+        authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authority::add);
+        user.setAuthorities(authority);
+        userRepository.save(user);
+        log.debug("Created Information for User: {}", user);
+        return user;
+    }
+
+    /**
+     * Check if user is not activated to remove it
+     * @param existingUser {@link User} instance to check
+     * @return true if user is not activated and false another case
+     */
+    private boolean removeNonActivatedUser(User existingUser){
+        if (existingUser.isActivated()) {
+            return false;
+        }
+        userRepository.delete(existingUser);
+        userRepository.flush();
+        return true;
+    }
+
+    /**
+     * Activate account using activate key
+     *
+     * @param key Activate key
+     * @return User if founded
+     */
+    public Optional<User> activateRegistration(String key) {
+        return userRepository.findUserByActivationKey(key).map(user -> {
+            user.setActivationKey(null);
+            log.debug("Activated user: {}", user);
+            return user;
+        });
+    }
 }

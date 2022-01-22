@@ -1,7 +1,6 @@
 package com.example.uaa.config;
 
 import com.example.uaa.security.AuthoritiesConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -40,15 +39,17 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
 
     private final AppProperties properties;
 
-    public AuthorizationServerConfiguration(PasswordEncoder passwordEncoder, ApplicationContext applicationContext, AppProperties properties) {
+    private final AuthenticationManager authorizationManager;
+
+    public AuthorizationServerConfiguration(PasswordEncoder passwordEncoder,
+                                            ApplicationContext applicationContext,
+                                            AppProperties properties,
+                                            @Qualifier("authenticationManagerBean") AuthenticationManager authorizationManager) {
         this.passwordEncoder = passwordEncoder;
         this.applicationContext = applicationContext;
         this.properties = properties;
+        this.authorizationManager = authorizationManager;
     }
-
-    @Autowired
-    @Qualifier("authenticationManagerBean")
-    private AuthenticationManager authorizationManager;
 
     /**
      * Apply the token converter (and enhancer) for token store.

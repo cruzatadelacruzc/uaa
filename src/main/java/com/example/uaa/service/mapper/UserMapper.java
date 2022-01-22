@@ -1,5 +1,6 @@
 package com.example.uaa.service.mapper;
 
+import com.example.uaa.config.Constants;
 import com.example.uaa.domain.Authority;
 import com.example.uaa.domain.User;
 import com.example.uaa.service.dto.UserDTO;
@@ -44,14 +45,16 @@ public class UserMapper {
         } else {
             User user = new User();
             user.setId(UserDTO.getId());
-            user.setUsername(UserDTO.getUsername());
+            user.setUsername(UserDTO.getUsername().toLowerCase());
             user.setFirstName(UserDTO.getFirstName());
             user.setLastName(UserDTO.getLastName());
-            user.setEmail(UserDTO.getEmail());
-            user.setLangKey(UserDTO.getLangKey());
+            user.setEmail(UserDTO.getEmail().toLowerCase());
+            if (UserDTO.getLangKey() == null) {
+                user.setLangKey(Constants.DEFAULT_LANGUAGE);
+            } else {
+                user.setLangKey(UserDTO.getLangKey());
+            }
             user.setActivated(UserDTO.isActivated());
-            Set<Authority> authorities = this.authoritiesFromStrings(UserDTO.getAuthorities());
-            user.setAuthorities(authorities);
             return user;
         }
     }

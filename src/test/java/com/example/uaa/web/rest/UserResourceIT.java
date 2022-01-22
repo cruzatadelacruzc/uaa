@@ -1,6 +1,6 @@
 package com.example.uaa.web.rest;
 
-import com.example.uaa.UaaApplication;
+import com.example.uaa.UaaApp;
 import com.example.uaa.domain.Authority;
 import com.example.uaa.domain.User;
 import com.example.uaa.repository.AuthorityRepository;
@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for the {@link UserResource} REST controller.
  */
-@SpringBootTest(classes = UaaApplication.class)
+@SpringBootTest(classes = UaaApp.class)
 public class UserResourceIT {
 
     private static final String DEFAULT_USERNAME = "userpepe";
